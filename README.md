@@ -1,17 +1,74 @@
-# بوابة الحوكمة الأكاديمية والمالية
+# نظام الإدارة المالية والإدارية الجامعية
 
-خريطة ربط لتصاميم كلية العلوم والتكنولوجيا (جامعة بغداد) كما وصلت في أرشيف Stitch. الحزمة واجهات HTML ثابتة مع `DESIGN.md`، وليست نظاماً منفّذاً ولا تحتوي مخطط SQL.
+منصة ويب عربية (RTL) لإدارة الأقساط، الدفعات، الوصولات بحجم A5، الخزائن المنفصلة للمسائي والموازي، المصروفات، شؤون الطلبة، الصلاحيات، ورموز QR. الواجهة HTML/CSS/JavaScript، والخادم PHP 8.2+ مع PDO وMySQL 8.
 
-الصور المنفصلة:
+التصاميم المرجعية لشاشات الكلية محفوظة في `portal-source/` و`docs/` للعرض البصري، بينما التشغيل الفعلي يتم من هذا التطبيق المتصل بقاعدة البيانات.
 
-- [ربط الواجهات والاعتماديات](docs/diagrams/01-interfaces.svg)
-- [صلاحيات البوابتين](docs/diagrams/02-permissions.svg)
-- [قاعدة البيانات مربوطة بالواجهات](docs/diagrams/03-database.svg)
+## التشغيل المحلي
 
-الشرح النصي: [docs/portal-architecture.md](docs/portal-architecture.md)
+المتطلبات: PHP 8.2+ (امتدادات `pdo_mysql`, `mbstring`, `bcmath`, `gd`)، MySQL 8، Composer.
 
-المصدر بعد فك الضغط:
+```bash
+cp .env.example .env
+# اضبط DB_* و ADMIN_INITIAL_PASSWORD و DEMO_PASSWORD
+composer install
+php bin/install.php
+php -S 127.0.0.1:43127 -t public public/router.php
+```
 
-`portal-source/stitch_academic_administrative_college_portal`
+افتح `http://127.0.0.1:43127/login`.
 
-كل مجلد `_1` … `_12` شاشة: `code.html` و`screen.png`. نظام الألوان والطباعة في `academic_governance_system/DESIGN.md`.
+### حساب الإدارة الأول
+
+- اسم المستخدم من `ADMIN_USERNAME` (الافتراضي `admin`).
+- كلمة المرور من `ADMIN_INITIAL_PASSWORD` فقط، وتُحفظ كـ `password_hash`.
+- يُفرض تغييرها عند أول دخول، ثم تُعطَّل آلية الإنشاء بعد وجود مستخدمين.
+
+حسابات العرض (كلمة `DEMO_PASSWORD`):
+
+| المستخدم | الدور |
+| --- | --- |
+| `finance` | مدير الحسابات |
+| `cashier` | أمين الصندوق |
+| `expense` | محاسب المصروفات (بلا أرصدة) |
+| `affairs` | شؤون الطلبة |
+| `auditor` | مدقق |
+| `student1` | طالب |
+
+مدير النظام لا يرى أرصدة الخزائن ما لم تُمنح له صلاحية `cashbox.view_balance` صراحة.
+
+## الاختبارات
+
+```bash
+php tests/run.php
+```
+
+تغطي التسجيل والدخول، الصلاحيات، الأقساط والخصومات، الدفعات والخزائن، ومنع الصرف بلا رصيد.
+
+## الهيكل
+
+- `public/` نقطة الدخول والأصول
+- `app/Controllers` غير مستخدمة كطبقة منفصلة؛ التوجيه في `app/Kernel.php` مع Services وRepositories المنطقية داخل الخدمات
+- `app/Services/` المنطق التجاري والمالي
+- `database/migrations/` مخطط الجداول
+- `views/` صفحات HTML
+- `storage/` ملفات محمية خارج المسار العام
+
+## الاستضافة
+
+1. ارفع المشروع خارج جذر الويب أو اجعل `public/` هو DocumentRoot.  
+2. انسخ `.env` بكلمة مرور إدارة جديدة غير كلمة التطوير.  
+3. `APP_DEBUG=false` و`COOKIE_SECURE=1` مع HTTPS.  
+4. شغّل `php bin/install.php` مرة واحدة.  
+5. صلاحيات الكتابة على `storage/`.  
+6. عطّل عرض الأخطاء في PHP.
+
+النسخ الاحتياطي: من لوحة الإدارة أو `mysqldump`. الاستعادة عبر استيراد SQL.
+
+## التوثيق
+
+- [تحليل وتصميم المرحلة الأولى](docs/ANALYSIS.md)
+- [مخطط ERD](docs/ERD.md)
+- [دليل المستخدم](docs/USER_GUIDE.md)
+- [دليل المسؤول](docs/ADMIN_GUIDE.md)
+- [وصف قاعدة البيانات](docs/DATABASE.md)

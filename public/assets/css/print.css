@@ -1,0 +1,23 @@
+@page { size: A5 portrait; margin: 8mm; }
+.print-toolbar { display: flex; gap: .5rem; padding: 1rem; }
+.a5-sheet, .a4-sheet {
+  width: 148mm; min-height: 210mm; margin: 0 auto 1rem; background: #fff;
+  border: 1px solid #d5dce6; padding: 10mm; color: #0b1c30;
+}
+.a4-sheet { width: 210mm; min-height: 297mm; }
+.doc-head { display: flex; justify-content: space-between; gap: 1rem; border-bottom: 2px solid #2457a7; padding-bottom: .6rem; }
+.doc-head h1, .a5-sheet h1 { text-align: center; color: #003f8a; font-size: 1.1rem; margin: .8rem 0; }
+.grid4 { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin-bottom: .8rem; }
+.grid4 span { display: block; color: #64748b; font-size: .75rem; }
+.doc-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+.doc-table th, .doc-table td { border: 1px solid #e2e8f0; padding: .4rem .5rem; }
+.doc-table .hl td { background: #eff4ff; font-weight: 800; }
+.doc-foot, .signs { display: flex; justify-content: space-between; gap: 1rem; margin-top: 1rem; align-items: end; }
+.logo, .sign, .seal img, .qr img { max-height: 64px; }
+.fine { font-size: .7rem; color: #64748b; text-align: center; margin-top: .8rem; }
+.seal-placeholder { border: 1px dashed #c5a45b; color: #c5a45b; padding: .6rem; border-radius: 50%; width: 88px; height: 88px; display: grid; place-items: center; font-size: .7rem; }
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff; }
+  .a5-sheet, .a4-sheet { border: 0; margin: 0; width: auto; min-height: auto; page-break-inside: avoid; }
+}

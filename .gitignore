@@ -1,1 +1,15 @@
-uploads/
+.env
+/vendor/
+/storage/logs/*
+/storage/documents/*
+/storage/receipts/*
+/storage/backups/*
+/storage/qr/*
+/storage/uploads/*
+!/storage/**/.gitkeep
+/public/uploads/
+agent-tools/
+.idea/
+.vscode/
+*.log
+.phpunit.result.cache
