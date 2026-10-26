@@ -111,6 +111,7 @@ table.data tr:hover td { background: #f8fafc; }
 .badge-warn { color: var(--warn); background: #fefce8; padding: .1rem .45rem; border-radius: 4px; }
 .badge-err { color: var(--err); background: #fef2f2; padding: .1rem .45rem; border-radius: 4px; }
 .empty { padding: 2.5rem 1rem; text-align: center; color: var(--muted); }
+[hidden] { display: none !important; }
 .modal {
   position: fixed; inset: 0; background: rgba(20,43,74,.45); display: grid; place-items: center; z-index: 50;
 }

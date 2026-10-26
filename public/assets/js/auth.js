@@ -10,21 +10,28 @@
   async function submit(form, path, then) {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+      const btn = form.querySelector('button[type="submit"]');
+      const original = btn ? btn.textContent : '';
+      if (btn) { btn.disabled = true; btn.textContent = 'جاري التحقق…'; }
       const fd = new FormData(form);
       const body = Object.fromEntries(fd.entries());
       if (form.querySelector('[name=agree]')) body.agree = form.querySelector('[name=agree]').checked;
       try {
         const data = await Ufam.api(path, { method: 'POST', body });
-        if (data.token) {
-          sessionStorage.setItem('ufam_token', data.token);
-          Ufam.token = data.token;
+        const token = data.token || data.data?.token;
+        const user = data.user || data.data?.user;
+        if (token) {
+          sessionStorage.setItem('ufam_token', token);
+          Ufam.token = token;
           if (data.csrf) sessionStorage.setItem('ufam_csrf', data.csrf);
-          location.href = data.user?.must_change_password ? '/app#/password' : '/app';
+          location.replace(user?.must_change_password ? '/app#/password' : '/app#/dashboard');
           return;
         }
+        if (btn) { btn.disabled = false; btn.textContent = original; }
         Ufam.alertBox(alertEl, data.message || 'تم.', 'success');
         if (then) then(data);
       } catch (err) {
+        if (btn) { btn.disabled = false; btn.textContent = original; }
         const extra = err.payload?.errors ? Object.values(err.payload.errors).join(' ') : '';
         Ufam.alertBox(alertEl, (err.message || '') + (extra ? ' ' + extra : ''), 'error');
       }

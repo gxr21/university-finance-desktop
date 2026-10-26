@@ -36,14 +36,21 @@
     ).join('');
   }
 
+  function hideBoot() {
+    const el = document.getElementById('boot-screen');
+    if (!el) return;
+    el.hidden = true;
+    el.setAttribute('hidden', '');
+    el.style.display = 'none';
+  }
+
   async function boot() {
     try {
       const data = await U.api('/api/auth/me');
       U.me = data.user;
-      U.identity = data.identity;
-      U.catalog = data.catalog;
+      U.identity = data.identity || {};
+      U.catalog = data.catalog || {};
       if (data.csrf) { U.csrf = data.csrf; sessionStorage.setItem('ufam_csrf', data.csrf); }
-      document.getElementById('boot-screen').hidden = true;
       document.getElementById('college-label').textContent = U.identity.college_name || 'الكلية';
       document.getElementById('university-label').textContent = U.identity.university_name || '';
       document.getElementById('user-name').textContent = U.me.full_name;
@@ -52,8 +59,11 @@
       document.getElementById('role-chip').textContent = roleNames[0] || 'مستخدم';
       const year = (U.catalog.academic_years || []).find((y) => y.is_current);
       document.getElementById('year-chip').textContent = year ? 'العام الدراسي ' + year.name : 'سنة غير محددة';
+      hideBoot();
       if (U.me.must_change_password) {
-        location.hash = '#/password';
+        if (location.hash !== '#/password') location.hash = '#/password';
+        await pages.password();
+        return;
       }
       if (document.body.dataset.admin === '1' && !U.can('admin.panel')) {
         main.innerHTML = '<div class="card">ليست لديك صلاحية دخول لوحة الإدارة.</div>';
@@ -61,6 +71,8 @@
       }
       route();
     } catch (e) {
+      hideBoot();
+      sessionStorage.removeItem('ufam_token');
       location.href = '/login';
     }
   }
@@ -449,16 +461,31 @@
   };
 
   pages.password = async () => {
-    main.innerHTML = pageHead('تغيير كلمة المرور', 'مطلوب بعد الحساب الابتدائي.') +
-      '<form id="cp" class="form-grid card"><label>الحالية<input name="current_password" type="password" required></label><label>الجديدة<input name="password" type="password" required></label><label>تأكيد<input name="password_confirmation" type="password" required></label><button class="btn primary">حفظ</button></form>';
+    main.innerHTML = pageHead('تغيير كلمة المرور الابتدائية', 'حساب الإدارة لا يُفتح على اللوحة قبل تعيين كلمة مرور جديدة.') +
+      '<form id="cp" class="form-grid card"><label>كلمة المرور الحالية<input name="current_password" type="password" required autocomplete="current-password"></label><label>كلمة المرور الجديدة<input name="password" type="password" required minlength="8" autocomplete="new-password"></label><label>تأكيد الكلمة الجديدة<input name="password_confirmation" type="password" required minlength="8" autocomplete="new-password"></label><button class="btn primary" type="submit">حفظ والمتابعة</button></form>';
     document.getElementById('cp').onsubmit = async (e) => {
       e.preventDefault();
-      try { await U.api('/api/auth/change-password', { method: 'POST', body: Object.fromEntries(new FormData(e.target)) }); U.toast('تم التغيير'); location.hash = '#/dashboard'; }
-      catch (err) { U.toast(err.message); }
+      const btn = e.target.querySelector('button');
+      btn.disabled = true;
+      try {
+        await U.api('/api/auth/change-password', { method: 'POST', body: Object.fromEntries(new FormData(e.target)) });
+        U.me.must_change_password = false;
+        U.toast('تم تغيير كلمة المرور.');
+        location.hash = '#/dashboard';
+        route();
+      } catch (err) {
+        btn.disabled = false;
+        U.toast(err.message);
+      }
     };
   };
 
   async function route() {
+    if (U.me?.must_change_password) {
+      hideBoot();
+      await pages.password();
+      return;
+    }
     const hash = location.hash.replace(/^#\/?/, '') || 'dashboard';
     const [name, id] = hash.split('?')[0].split('/');
     renderNav(name === 'student' ? 'students' : name === 'expense' ? 'expenses' : name);

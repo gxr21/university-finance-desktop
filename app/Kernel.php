@@ -218,9 +218,11 @@ final class Kernel
         }
         if ($path === '/app' || $path === '/admin') {
             $this->startPhpSession();
+            $csrf = $_SESSION['csrf'] ?? '';
+            session_write_close();
             return $this->view('app', [
                 'identity' => $identity,
-                'csrf' => $_SESSION['csrf'] ?? '',
+                'csrf' => $csrf,
                 'adminOnly' => $path === '/admin',
             ]);
         }
