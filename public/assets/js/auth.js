@@ -17,14 +17,16 @@
       const body = Object.fromEntries(fd.entries());
       if (form.querySelector('[name=agree]')) body.agree = form.querySelector('[name=agree]').checked;
       try {
-        const data = await Ufam.api(path, { method: 'POST', body });
+        const data = await Ufam.api(path, { method: 'POST', body, timeoutMs: 20000 });
         const token = data.token || data.data?.token;
         const user = data.user || data.data?.user;
         if (token) {
           sessionStorage.setItem('ufam_token', token);
           Ufam.token = token;
           if (data.csrf) sessionStorage.setItem('ufam_csrf', data.csrf);
-          location.replace(user?.must_change_password ? '/app#/password' : '/app#/dashboard');
+          Ufam.alertBox(alertEl, 'تم التحقق. جاري فتح اللوحة…', 'success');
+          const dest = Ufam.needsPasswordChange(user) ? '/app#/password' : '/app#/dashboard';
+          window.location.replace(dest);
           return;
         }
         if (btn) { btn.disabled = false; btn.textContent = original; }

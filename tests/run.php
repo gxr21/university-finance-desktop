@@ -281,6 +281,41 @@ $req3 = new Request('POST', '/api/payments', [], ['invoice_id' => 1, 'amount' =>
 $res3 = $kernel->handle($req3);
 check('HTTP forbids expense accountant creating a payment', $res3->status === 403);
 
+$adminHttp = $kernel->handle(new Request(
+    'POST',
+    '/api/auth/login',
+    [],
+    ['identifier' => 'admin', 'password' => $adminPass],
+    [],
+    [],
+    [],
+    '127.0.0.1',
+    'test'
+));
+$adminBody = json_decode($adminHttp->body, true);
+check(
+    'admin HTTP login returns password-change gate',
+    ($adminHttp->status === 200)
+        && !empty($adminBody['data']['token'])
+        && !empty($adminBody['data']['user']['must_change_password'])
+);
+$appPage = $kernel->handle(new Request(
+    'GET',
+    '/app',
+    [],
+    [],
+    [],
+    ['UFAMSESSID' => (string) ($adminBody['data']['token'] ?? '')],
+    [],
+    '127.0.0.1',
+    'test'
+));
+$bootOk = $appPage->status === 200
+    && str_contains($appPage->body, '__UFAM_BOOT__')
+    && str_contains($appPage->body, 'must_change_password')
+    && str_contains($appPage->body, 'مدير النظام');
+check('app page embeds admin session so the boot overlay can hide immediately', $bootOk);
+
 $identity = $settings->identity();
 check('identity loaded from settings not hardcoded only', ($identity['college_name'] ?? '') !== '');
 

@@ -76,7 +76,17 @@ final class Kernel
 
     public function handle(?Request $request = null): Response
     {
-        $request ??= Request::fromGlobals();
+        try {
+            return $this->dispatch($request ?? Request::fromGlobals());
+        } finally {
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_write_close();
+            }
+        }
+    }
+
+    private function dispatch(Request $request): Response
+    {
         try {
             if ($request->method === 'OPTIONS') {
                 return new Response(204);
@@ -88,7 +98,7 @@ final class Kernel
                     if ($e->status === 401) {
                         return Response::redirect('/login');
                     }
-                    return Response::html('<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><body style="font-family:Tajawal,sans-serif;padding:2rem">' . Security::e($e->getMessage()) . '</body></html>', $e->status);
+                    return Response::html('<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><body style="font-family:Tahoma,sans-serif;padding:2rem">' . Security::e($e->getMessage()) . '</body></html>', $e->status);
                 }
             }
             $match = $this->router->match($request);
@@ -118,6 +128,9 @@ final class Kernel
                 if ($expected === '' || !hash_equals($expected, $csrf)) {
                     throw HttpException::forbidden('رمز الحماية غير صالح. أعد تحميل الصفحة.');
                 }
+            }
+            if ($request->method === 'GET' && session_status() === PHP_SESSION_ACTIVE) {
+                session_write_close();
             }
             $result = ($route['handler'])($request, $match['params']);
             return $result instanceof Response ? $result : Response::json(['ok' => true, 'data' => $result]);
@@ -217,13 +230,26 @@ final class Kernel
             return $this->view('reset', ['identity' => $identity, 'token' => $request->query['token'] ?? '']);
         }
         if ($path === '/app' || $path === '/admin') {
-            $this->startPhpSession();
+            $token = $this->sessionToken($request);
+            $user = $this->auth->resolveSession($token);
             $csrf = $_SESSION['csrf'] ?? '';
-            session_write_close();
+            $boot = null;
+            if ($user) {
+                $boot = [
+                    'user' => $user,
+                    'identity' => $identity,
+                    'catalog' => $this->catalog->bootstrap(),
+                    'csrf' => $csrf,
+                ];
+            }
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_write_close();
+            }
             return $this->view('app', [
                 'identity' => $identity,
                 'csrf' => $csrf,
                 'adminOnly' => $path === '/admin',
+                'boot' => $boot,
             ]);
         }
         if (preg_match('#^/receipts/(\d+)/print$#', $path, $m)) {
@@ -335,13 +361,13 @@ final class Kernel
         $r->add('POST', '/api/auth/login', function (Request $req) {
             $data = $this->auth->login((string) $req->input('identifier', ''), (string) $req->input('password', ''), $req->ip, $req->userAgent);
             $this->setAuthCookie($data['token']);
-            $data['csrf'] = $_SESSION['csrf'];
+            $data['csrf'] = $_SESSION['csrf'] ?? '';
             return $data;
         }, false);
         $r->add('POST', '/api/auth/qr', function (Request $req) {
             $data = $this->auth->loginWithQr((string) $req->input('token', ''), $req->ip, $req->userAgent);
             $this->setAuthCookie($data['token']);
-            $data['csrf'] = $_SESSION['csrf'];
+            $data['csrf'] = $_SESSION['csrf'] ?? '';
             return $data;
         }, false);
         $r->add('POST', '/api/auth/forgot', function (Request $req) {

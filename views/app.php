@@ -47,8 +47,11 @@ include __DIR__ . '/partials/head.php';
   </div>
   <div id="modal" class="modal" hidden></div>
   <div id="toast" class="toast" hidden></div>
-  <script src="/assets/js/api.js"></script>
-  <script src="/assets/js/ui.js"></script>
-  <script src="/assets/js/app.js"></script>
+  <script>
+    window.__UFAM_BOOT__ = <?= json_encode($boot ?? null, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+  </script>
+  <script src="/assets/js/api.js?v=2"></script>
+  <script src="/assets/js/ui.js?v=2"></script>
+  <script src="/assets/js/app.js?v=2"></script>
 </body>
 </html>

@@ -49,7 +49,7 @@ include __DIR__ . '/partials/head.php';
       </form>
     </section>
   </main>
-  <script src="/assets/js/api.js"></script>
-  <script src="/assets/js/auth.js"></script>
+  <script src="/assets/js/api.js?v=2"></script>
+  <script src="/assets/js/auth.js?v=2"></script>
 </body>
 </html>

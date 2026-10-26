@@ -36,31 +36,50 @@
     ).join('');
   }
 
+  let appReady = false;
+
   function hideBoot() {
     const el = document.getElementById('boot-screen');
     if (!el) return;
+    el.classList.add('is-hidden');
     el.hidden = true;
     el.setAttribute('hidden', '');
     el.style.display = 'none';
+    el.remove();
+  }
+
+  function applySession(data) {
+    if (!data || !data.user) throw new Error('لا توجد جلسة.');
+    U.me = data.user;
+    U.identity = data.identity || {};
+    U.catalog = data.catalog || {};
+    if (data.csrf) { U.csrf = data.csrf; sessionStorage.setItem('ufam_csrf', data.csrf); }
+    const college = document.getElementById('college-label');
+    const university = document.getElementById('university-label');
+    const userName = document.getElementById('user-name');
+    const userRole = document.getElementById('user-role');
+    const roleChip = document.getElementById('role-chip');
+    const yearChip = document.getElementById('year-chip');
+    if (college) college.textContent = U.identity.college_name || 'الكلية';
+    if (university) university.textContent = U.identity.university_name || '';
+    if (userName) userName.textContent = U.me.full_name;
+    const roleNames = Object.values(U.me.roles || {});
+    if (userRole) userRole.textContent = roleNames.join(' · ');
+    if (roleChip) roleChip.textContent = roleNames[0] || 'مستخدم';
+    const year = (U.catalog.academic_years || []).find((y) => y.is_current);
+    if (yearChip) yearChip.textContent = year ? 'العام الدراسي ' + year.name : 'سنة غير محددة';
   }
 
   async function boot() {
     try {
-      const data = await U.api('/api/auth/me');
-      U.me = data.user;
-      U.identity = data.identity || {};
-      U.catalog = data.catalog || {};
-      if (data.csrf) { U.csrf = data.csrf; sessionStorage.setItem('ufam_csrf', data.csrf); }
-      document.getElementById('college-label').textContent = U.identity.college_name || 'الكلية';
-      document.getElementById('university-label').textContent = U.identity.university_name || '';
-      document.getElementById('user-name').textContent = U.me.full_name;
-      const roleNames = Object.values(U.me.roles || {});
-      document.getElementById('user-role').textContent = roleNames.join(' · ');
-      document.getElementById('role-chip').textContent = roleNames[0] || 'مستخدم';
-      const year = (U.catalog.academic_years || []).find((y) => y.is_current);
-      document.getElementById('year-chip').textContent = year ? 'العام الدراسي ' + year.name : 'سنة غير محددة';
+      let data = window.__UFAM_BOOT__;
+      if (!data || !data.user) {
+        data = await U.api('/api/auth/me', { timeoutMs: 12000 });
+      }
+      applySession(data);
       hideBoot();
-      if (U.me.must_change_password) {
+      appReady = true;
+      if (U.needsPasswordChange(U.me)) {
         if (location.hash !== '#/password') location.hash = '#/password';
         await pages.password();
         return;
@@ -69,10 +88,13 @@
         main.innerHTML = '<div class="card">ليست لديك صلاحية دخول لوحة الإدارة.</div>';
         return;
       }
-      route();
+      await route();
     } catch (e) {
       hideBoot();
       sessionStorage.removeItem('ufam_token');
+      if (main) {
+        main.innerHTML = '<div class="card alert error">تعذر فتح الجلسة. <a href="/login">العودة لتسجيل الدخول</a></div>';
+      }
       location.href = '/login';
     }
   }
@@ -481,7 +503,7 @@
   };
 
   async function route() {
-    if (U.me?.must_change_password) {
+    if (U.needsPasswordChange(U.me)) {
       hideBoot();
       await pages.password();
       return;
@@ -500,7 +522,7 @@
     }
   }
 
-  window.addEventListener('hashchange', route);
+  window.addEventListener('hashchange', () => { if (appReady) route(); });
   document.getElementById('logout-btn').onclick = async () => {
     try { await U.api('/api/auth/logout', { method: 'POST', body: {} }); } catch (e) {}
     sessionStorage.clear();

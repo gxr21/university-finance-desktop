@@ -18,12 +18,12 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 body {
-  font-family: "Tajawal", "Noto Sans Arabic", sans-serif;
+  font-family: "Tajawal", "Noto Sans Arabic", "IBM Plex Sans Arabic", "Segoe UI", Tahoma, Arial, sans-serif;
   background: var(--bg);
   color: var(--text);
   line-height: 1.6;
 }
-h1, h2, h3 { font-family: "IBM Plex Sans Arabic", "Tajawal", sans-serif; margin: 0 0 .4rem; }
+h1, h2, h3 { font-family: "IBM Plex Sans Arabic", "Tajawal", "Segoe UI", Tahoma, sans-serif; margin: 0 0 .4rem; }
 a { color: var(--primary); text-decoration: none; }
 .muted { color: var(--muted); }
 .auth-body { min-height: 100vh; display: grid; place-items: center; padding: 1.5rem; background: linear-gradient(180deg, #eaf1ff, var(--bg)); }
@@ -115,9 +115,11 @@ table.data tr:hover td { background: #f8fafc; }
 .modal {
   position: fixed; inset: 0; background: rgba(20,43,74,.45); display: grid; place-items: center; z-index: 50;
 }
+.modal[hidden] { display: none !important; }
 .modal .dialog { background: #fff; padding: 1.25rem; border-radius: 8px; width: min(560px, 92vw); box-shadow: 0 8px 24px rgba(20,43,74,.16); }
 .toast { position: fixed; bottom: 1rem; left: 1rem; background: var(--navy); color: #fff; padding: .7rem 1rem; border-radius: 6px; z-index: 60; }
 .boot-screen { position: fixed; inset: 0; display: grid; place-items: center; background: var(--bg); z-index: 80; }
+.boot-screen[hidden], .boot-screen.is-hidden { display: none !important; visibility: hidden !important; pointer-events: none !important; }
 .spinner { width: 36px; height: 36px; border: 3px solid #d3e4fe; border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .skeleton-page { height: 240px; border-radius: 8px; background: linear-gradient(90deg, #eef2f6, #fff, #eef2f6); background-size: 200% 100%; animation: shine 1.2s infinite; }
